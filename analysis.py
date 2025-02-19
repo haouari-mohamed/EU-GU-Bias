@@ -1,30 +1,27 @@
-import yfinance as yf
 import pandas as pd
-from analysis import calculate_correlation, calculate_fvg, calculate_bias
 
-# Fetch historical data for EUR/USD and GBP/USD
-def fetch_data():
-    eurusd = yf.download('EURUSD=X', start='2020-01-01', end='2025-01-01', interval='1d')
-    gbpusd = yf.download('GBPUSD=X', start='2020-01-01', end='2025-01-01', interval='1d')
-    return eurusd, gbpusd
+# Calculate correlation between EUR/USD and GBP/USD
+def calculate_correlation(eurusd, gbpusd):
+    return eurusd['Close'].corr(gbpusd['Close'])
 
-# Main function
-def main():
-    eurusd, gbpusd = fetch_data()
+# Identify FVGs (Fair Value Gaps) for a given currency pair (based on 1% price change)
+def calculate_fvg(data):
+    fvg = []
+    for i in range(1, len(data)):
+        if abs(data['Close'][i] - data['Close'][i-1]) > data['Close'][i-1] * 0.01:
+            fvg.append(i)  # Save the index where a FVG occurs
+    return fvg
 
-    # Calculate correlation between EUR/USD and GBP/USD
-    correlation = calculate_correlation(eurusd, gbpusd)
-    print(f"Correlation between EUR/USD and GBP/USD: {correlation}")
-
-    # Identify FVGs for EUR/USD and GBP/USD
-    eurusd_fvg = calculate_fvg(eurusd)
-    gbpusd_fvg = calculate_fvg(gbpusd)
-    print(f"FVG in EUR/USD: {eurusd_fvg}")
-    print(f"FVG in GBP/USD: {gbpusd_fvg}")
-
-    # Determine the daily bias
-    bias = calculate_bias(correlation, eurusd_fvg, gbpusd_fvg)
-    print(f"Daily Bias: {bias}")
-
-if __name__ == '__main__':
-    main()
+# Calculate the daily bias based on correlation and FVGs
+def calculate_bias(correlation, eurusd_fvg, gbpusd_fvg):
+    if correlation > 0.8:  # High correlation
+        if eurusd_fvg and gbpusd_fvg:
+            return "Strong Bias - Buy both EUR/USD and GBP/USD"
+        elif eurusd_fvg:
+            return "Bias - Buy EUR/USD"
+        elif gbpusd_fvg:
+            return "Bias - Buy GBP/USD"
+        else:
+            return "Neutral Bias"
+    else:
+        return "Weak Correlation - Avoid trading both"
