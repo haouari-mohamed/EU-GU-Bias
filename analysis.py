@@ -1,27 +1,33 @@
 import pandas as pd
 
-# Calculate correlation between EUR/USD and GBP/USD
-def calculate_correlation(eurusd, gbpusd):
-    return eurusd['Close'].corr(gbpusd['Close'])
+# Function to calculate correlation between EUR/USD and GBP/USD
+def calculate_correlation(eurusd_df, gbpusd_df):
+    # Calculate the correlation between the 'Close' columns
+    correlation = eurusd_df['Close'].corr(gbpusd_df['Close'])
+    return correlation
 
-# Identify FVGs (Fair Value Gaps) for a given currency pair (based on 1% price change)
-def calculate_fvg(data):
+# Function to detect Fair Value Gaps (FVGs) in the data
+def calculate_fvg(df):
+    # Example: Check for gaps in the data
     fvg = []
-    for i in range(1, len(data)):
-        if abs(data['Close'][i] - data['Close'][i-1]) > data['Close'][i-1] * 0.01:
-            fvg.append(i)  # Save the index where a FVG occurs
+    for i in range(1, len(df)):
+        if df['Close'].iloc[i] > df['Close'].iloc[i - 1]:
+            fvg.append(f"Up gap at {df.index[i]}")
+        elif df['Close'].iloc[i] < df['Close'].iloc[i - 1]:
+            fvg.append(f"Down gap at {df.index[i]}")
     return fvg
 
-# Calculate the daily bias based on correlation and FVGs
+# Function to calculate the daily bias based on correlation and FVGs
 def calculate_bias(correlation, eurusd_fvg, gbpusd_fvg):
-    if correlation > 0.8:  # High correlation
-        if eurusd_fvg and gbpusd_fvg:
-            return "Strong Bias - Buy both EUR/USD and GBP/USD"
-        elif eurusd_fvg:
-            return "Bias - Buy EUR/USD"
-        elif gbpusd_fvg:
-            return "Bias - Buy GBP/USD"
-        else:
-            return "Neutral Bias"
+    if correlation > 0.8:
+        bias = 'Buy'  # Bias is buy if the correlation is high
+    elif correlation < -0.8:
+        bias = 'Sell'  # Bias is sell if the correlation is negative
     else:
-        return "Weak Correlation - Avoid trading both"
+        bias = 'Neutral'  # Otherwise, the bias is neutral
+
+    # Modify bias based on FVG analysis (for example, we could adjust it if FVGs are present)
+    if eurusd_fvg or gbpusd_fvg:
+        bias += ' with FVG'
+
+    return bias
